@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera OCR</title>
+    <style>
+        #video {
+            border: 1px solid black;
+        }
+        #canvas {
+            border: 1px solid black;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Capture Image and Send to OCR</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <button id="snap">Capture</button>
+    <button id="send">Send to OCR</button>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <div id="result"></div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const send = document.getElementById('send');
+        const result = document.getElementById('result');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: " + err);
+            });
+
+        snap.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        });
+
+        send.addEventListener('click', () => {
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob, 'capture.png');
+
+                fetch('http://127.0.0.1:5000/ocr', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        result.textContent = 'OCR Result: ' + data.text;
+                    } else {
+                        result.textContent = 'Error: ' + data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    result.textContent = 'Error: ' + error.message;
+                });
+            }, 'image/png');
+        });
+    </script>
+</body>
+</html>
