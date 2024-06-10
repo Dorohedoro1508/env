@@ -3,7 +3,7 @@ from ocrapi.main import app as application  # Asume que `app` es tu aplicación 
 
 if __name__ == "__main__":
     # Esta parte se ejecutará solo cuando ejecutes el script directamente
-    application.run()
+    application.run(debug=True, port=5500)
 else:
     # Esta parte se ejecutará cuando el script sea importado como un módulo
     serve(application, host='0.0.0.0', port=8080)
