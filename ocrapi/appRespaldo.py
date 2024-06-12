@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 import pytesseract
@@ -34,7 +34,8 @@ def ocr_process():
             'message': str(e)
         }
         return jsonify(response), 500
-    
+
+# Nueva ruta para manejar la subida de imágenes desde el disco
 @app.route('/upload', methods=['POST'])
 def upload_image():
     try:
@@ -62,31 +63,34 @@ def upload_image():
 @app.route('/create_csv', methods=['POST'])
 def create_csv():
     try:
-        data = request.get_json()
-        text = data.get('text', '')
-        
-        # Crear archivo CSV
-        csv_file = 'ocr_result.csv'
-        with open(csv_file, 'w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(['Text'])
-            writer.writerow([text])
-        
-        return jsonify({'status': 'success', 'message': 'CSV created successfully'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        data = request.json
+        if 'text' not in data:
+            return jsonify({'status': 'error', 'message': 'No text provided'}), 400
 
-@app.route('/download_csv', methods=['GET'])
-def download_csv():
-    try:
+        text = data['text']
         csv_filename = 'ocr_result.csv'
-        csv_path = os.path.join('C:\\Users\\tatan\\OneDrive\\Documents\\Ing Conocimiento\\env', csv_filename)
-        if os.path.exists(csv_path):
-            return send_file(csv_path, as_attachment=True)
-        else:
-            return jsonify({'status': 'error', 'message': 'CSV file not found'}), 404
+        
+        # Dividir el texto en líneas y palabras
+        lines = text.split('\n')
+        csv_data = [line.split() for line in lines]
+
+        # Guardar el texto como un archivo CSV
+        with open(csv_filename, mode='w', newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerows(csv_data)
+
+        response = {
+            'status': 'success',
+            'message': f'CSV file created successfully: {csv_filename}',
+            'csv_filename': csv_filename
+        }
+        return jsonify(response)
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        response = {
+            'status': 'error',
+            'message': str(e)
+        }
+        return jsonify(response), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

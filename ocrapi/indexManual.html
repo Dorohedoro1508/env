@@ -16,8 +16,9 @@
     <!--Botones-->
     <button class="boton" id="snap">Capturar</button>
     <button class="boton" id="send">Enviar</button>
-    <input type="file" class="boton" id="upload">
-    <button class="boton" id="download-csv">Descargar CSV</button>
+    <button class="boton" id="create-csv">Crear CSV</button>
+    <!-- Modificación: Cambiar a input type="file" para permitir la selección de archivos -->
+    <input type="file" id="upload" width="150" height="50">
     <!--Resultados-->
     <div id="resultado"></div>
     <textarea id="ocr-result" readonly></textarea>
@@ -29,8 +30,9 @@
         const snap = document.getElementById('snap');
         const send = document.getElementById('send');
         const upload = document.getElementById('upload');
-        const downloadCsv = document.getElementById('download-csv');
+        const result = document.getElementById('resultado');
         const ocrResult = document.getElementById('ocr-result');
+        const createCsv = document.getElementById('create-csv');
 
         // Variable para guardar el texto procesado
         let processedText = '';
@@ -124,52 +126,32 @@
                 });
             }
         });
-
-        // Descargar el archivo CSV
-        downloadCsv.addEventListener('click', () => {
-            // Crear el CSV antes de descargar
-            fetch('http://127.0.0.1:5000/create_csv', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text: processedText })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log(data.message);
-                    fetch('http://127.0.0.1:5000/download_csv')
-                        .then(response => {
-                            if (response.ok) {
-                                return response.blob();
-                            } else {
-                                throw new Error('Network response was not ok');
-                            }
-                        })
-                        .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.style.display = 'none';
-                            a.href = url;
-                            a.download = 'ocr_result.csv';
-                            document.body.appendChild(a);
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        })
-                        .catch(error => {
-                            console.error('Error downloading CSV:', error);
-                            alert('Error downloading CSV: ' + error.message);
-                        });
-                } else {
-                    console.error('Error creating CSV:', data.message);
-                    alert('Error creating CSV: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error creating CSV: ' + error.message);
-            });
+        createCsv.addEventListener('click', () => {
+            if (processedText) {
+                fetch('http://127.0.0.1:5000/create_csv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: processedText })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        console.log(data.message);
+                        alert('CSV file created successfully');
+                    } else {
+                        console.error('Error creating CSV:', data.message);
+                        alert('Error creating CSV: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error creating CSV: ' + error.message);
+                });
+            } else {
+                alert('No processed text available to create CSV');
+            }
         });
     </script>
 </body>
